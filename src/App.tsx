@@ -49,6 +49,7 @@ import { ArticulationDiagram } from "./components/ArticulationDiagram";
 import { BaselineAssessment } from "./components/BaselineAssessment";
 import { ProgressDashboard } from "./components/ProgressDashboard";
 import { SettingsView } from "./components/SettingsView";
+import { StartScreen } from "./components/StartScreen";
 
 const STORAGE_KEY = "phonoflow_user_progress_v1";
 
@@ -126,6 +127,11 @@ export default function App() {
   const [activeView, setActiveView] = useState<
     "curriculum" | "lesson" | "baseline" | "progress" | "settings"
   >("curriculum");
+
+  // Snappy Start Screen State (opens on launch unless skipped, can be opened anytime)
+  const [showStartScreen, setShowStartScreen] = useState<boolean>(() => {
+    return localStorage.getItem("phonoflow_skip_start_screen") !== "true";
+  });
 
   // Selected Lesson State
   const [selectedLessonId, setSelectedLessonId] = useState<string>("level-1-th-sounds");
@@ -483,6 +489,17 @@ export default function App() {
               <span>Practice Lab</span>
             </button>
             <button
+              onClick={() => setActiveView("baseline")}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition ${
+                activeView === "baseline"
+                  ? "bg-emerald-600 text-white shadow-md"
+                  : "text-neutral-500 hover:text-neutral-800 hover:bg-neutral-50"
+              }`}
+            >
+              <Activity className="w-4 h-4" />
+              <span>Diagnostics</span>
+            </button>
+            <button
               onClick={() => setActiveView("progress")}
               className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition ${
                 activeView === "progress"
@@ -501,7 +518,7 @@ export default function App() {
                   ? "bg-emerald-600 text-white shadow-md"
                   : "text-neutral-500 hover:text-neutral-800 hover:bg-neutral-50"
               }`}
-              title="Settings"
+              title="Settings & Help"
             >
               <Settings className="w-4 h-4" />
             </button>
@@ -509,6 +526,15 @@ export default function App() {
 
           {/* Right Streak & Quick Stats */}
           <div className="flex items-center space-x-1.5 sm:space-x-2.5">
+            <button
+              onClick={() => setShowStartScreen(true)}
+              className="hidden lg:flex items-center space-x-1.5 bg-white hover:bg-neutral-50 border border-neutral-200 text-neutral-700 px-3 py-1.5 rounded-xl text-xs font-bold shadow-xs transition"
+              title="Open Quick Start Screen"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Start Screen</span>
+            </button>
+
             <div className="hidden sm:flex items-center space-x-1.5 bg-white border border-neutral-200 px-3 py-1.5 rounded-xl text-xs font-semibold text-neutral-600">
               <Clock className="w-3.5 h-3.5 text-emerald-600" />
               <span>{Math.round(progress.totalMinutesPracticed)}m</span>
@@ -1294,6 +1320,9 @@ export default function App() {
               progress={progress}
               onClearProgress={handleClearProgress}
               STORAGE_KEY={STORAGE_KEY}
+              onNavigateToBaseline={() => setActiveView("baseline")}
+              onOpenStartScreen={() => setShowStartScreen(true)}
+              onNavigateToCurriculum={() => setActiveView("curriculum")}
             />
           </motion.div>
         )}
@@ -1310,60 +1339,88 @@ export default function App() {
         </div>
       </footer>
 
-      {/* Mobile Fixed Bottom Navigation Bar */}
-      <nav
-        id="mobile-bottom-navigation-bar"
-        className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-neutral-200 px-1 py-1 flex items-center justify-between shadow-[0_-4px_20px_rgba(0,0,0,0.08)] pb-[max(env(safe-area-inset-bottom,0px),8px)]"
-      >
-        <button
-          id="mobile-nav-curriculum"
-          onClick={() => setActiveView("curriculum")}
-          className={`flex flex-col items-center justify-center min-h-[48px] flex-1 py-1 rounded-xl transition-all active:scale-95 ${
-            activeView === "curriculum"
-              ? "text-emerald-700 font-bold bg-emerald-100/80 shadow-inner"
-              : "text-neutral-500 hover:text-neutral-800 font-medium"
-          }`}
+      {/* Mobile Fixed Bottom Navigation Bar - Completely unmounted when Start Screen is active */}
+      {!showStartScreen && (
+        <nav
+          id="mobile-bottom-navigation-bar"
+          className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-neutral-200 px-1 py-1 flex items-center justify-between shadow-[0_-4px_20px_rgba(0,0,0,0.08)] pb-[max(env(safe-area-inset-bottom,0px),8px)]"
         >
-          <Compass className={`w-5 h-5 ${activeView === "curriculum" ? "stroke-[2.5]" : "stroke-[1.75]"}`} />
-          <span className="text-[10px] mt-0.5 leading-none tracking-tight">Roadmap</span>
-        </button>
-        <button
-          id="mobile-nav-lesson"
-          onClick={() => setActiveView("lesson")}
-          className={`flex flex-col items-center justify-center min-h-[48px] flex-1 py-1 rounded-xl transition-all active:scale-95 ${
-            activeView === "lesson"
-              ? "text-emerald-700 font-bold bg-emerald-100/80 shadow-inner"
-              : "text-neutral-500 hover:text-neutral-800 font-medium"
-          }`}
-        >
-          <Mic className={`w-5 h-5 ${activeView === "lesson" ? "stroke-[2.5]" : "stroke-[1.75]"}`} />
-          <span className="text-[10px] mt-0.5 leading-none tracking-tight">Practice</span>
-        </button>
-        <button
-          id="mobile-nav-progress"
-          onClick={() => setActiveView("progress")}
-          className={`flex flex-col items-center justify-center min-h-[48px] flex-1 py-1 rounded-xl transition-all active:scale-95 ${
-            activeView === "progress"
-              ? "text-emerald-700 font-bold bg-emerald-100/80 shadow-inner"
-              : "text-neutral-500 hover:text-neutral-800 font-medium"
-          }`}
-        >
-          <BarChart3 className={`w-5 h-5 ${activeView === "progress" ? "stroke-[2.5]" : "stroke-[1.75]"}`} />
-          <span className="text-[10px] mt-0.5 leading-none tracking-tight">Analytics</span>
-        </button>
-        <button
-          id="mobile-nav-settings"
-          onClick={() => setActiveView("settings")}
-          className={`flex flex-col items-center justify-center min-h-[48px] flex-1 py-1 rounded-xl transition-all active:scale-95 ${
-            activeView === "settings"
-              ? "text-emerald-700 font-bold bg-emerald-100/80 shadow-inner"
-              : "text-neutral-500 hover:text-neutral-800 font-medium"
-          }`}
-        >
-          <Settings className={`w-5 h-5 ${activeView === "settings" ? "stroke-[2.5]" : "stroke-[1.75]"}`} />
-          <span className="text-[10px] mt-0.5 leading-none tracking-tight">Settings</span>
-        </button>
-      </nav>
+          <button
+            id="mobile-nav-curriculum"
+            onClick={() => setActiveView("curriculum")}
+            className={`flex flex-col items-center justify-center min-h-[48px] flex-1 py-1 rounded-xl transition-all active:scale-95 ${
+              activeView === "curriculum"
+                ? "text-emerald-700 font-bold bg-emerald-100/80 shadow-inner"
+                : "text-neutral-500 hover:text-neutral-800 font-medium"
+            }`}
+          >
+            <Compass className={`w-5 h-5 ${activeView === "curriculum" ? "stroke-[2.5]" : "stroke-[1.75]"}`} />
+            <span className="text-[10px] mt-0.5 leading-none tracking-tight">Roadmap</span>
+          </button>
+          <button
+            id="mobile-nav-lesson"
+            onClick={() => setActiveView("lesson")}
+            className={`flex flex-col items-center justify-center min-h-[48px] flex-1 py-1 rounded-xl transition-all active:scale-95 ${
+              activeView === "lesson"
+                ? "text-emerald-700 font-bold bg-emerald-100/80 shadow-inner"
+                : "text-neutral-500 hover:text-neutral-800 font-medium"
+            }`}
+          >
+            <Mic className={`w-5 h-5 ${activeView === "lesson" ? "stroke-[2.5]" : "stroke-[1.75]"}`} />
+            <span className="text-[10px] mt-0.5 leading-none tracking-tight">Practice</span>
+          </button>
+          <button
+            id="mobile-nav-baseline"
+            onClick={() => setActiveView("baseline")}
+            className={`flex flex-col items-center justify-center min-h-[48px] flex-1 py-1 rounded-xl transition-all active:scale-95 ${
+              activeView === "baseline"
+                ? "text-emerald-700 font-bold bg-emerald-100/80 shadow-inner"
+                : "text-neutral-500 hover:text-neutral-800 font-medium"
+            }`}
+          >
+            <Activity className={`w-5 h-5 ${activeView === "baseline" ? "stroke-[2.5]" : "stroke-[1.75]"}`} />
+            <span className="text-[10px] mt-0.5 leading-none tracking-tight">Diagnostics</span>
+          </button>
+          <button
+            id="mobile-nav-progress"
+            onClick={() => setActiveView("progress")}
+            className={`flex flex-col items-center justify-center min-h-[48px] flex-1 py-1 rounded-xl transition-all active:scale-95 ${
+              activeView === "progress"
+                ? "text-emerald-700 font-bold bg-emerald-100/80 shadow-inner"
+                : "text-neutral-500 hover:text-neutral-800 font-medium"
+            }`}
+          >
+            <BarChart3 className={`w-5 h-5 ${activeView === "progress" ? "stroke-[2.5]" : "stroke-[1.75]"}`} />
+            <span className="text-[10px] mt-0.5 leading-none tracking-tight">Analytics</span>
+          </button>
+          <button
+            id="mobile-nav-settings"
+            onClick={() => setActiveView("settings")}
+            className={`flex flex-col items-center justify-center min-h-[48px] flex-1 py-1 rounded-xl transition-all active:scale-95 ${
+              activeView === "settings"
+                ? "text-emerald-700 font-bold bg-emerald-100/80 shadow-inner"
+                : "text-neutral-500 hover:text-neutral-800 font-medium"
+            }`}
+          >
+            <Settings className={`w-5 h-5 ${activeView === "settings" ? "stroke-[2.5]" : "stroke-[1.75]"}`} />
+            <span className="text-[10px] mt-0.5 leading-none tracking-tight">Settings</span>
+          </button>
+        </nav>
+      )}
+
+      {/* Snappy Start Screen Modal - Top of Stacking Context */}
+      <AnimatePresence>
+        {showStartScreen && (
+          <StartScreen
+            progress={progress}
+            onNavigate={(view) => {
+              setActiveView(view);
+              setShowStartScreen(false);
+            }}
+            onClose={() => setShowStartScreen(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
