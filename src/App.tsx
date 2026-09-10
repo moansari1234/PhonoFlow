@@ -170,6 +170,31 @@ export default function App() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
   }, [progress]);
 
+  // Verify streak on load
+  useEffect(() => {
+    setProgress((prev) => {
+      const todayStr = new Date().toISOString().split("T")[0];
+      const lastDateStr = prev.lastPracticeDate;
+      if (!lastDateStr) return prev;
+      
+      const last = new Date(lastDateStr);
+      const today = new Date(todayStr);
+      last.setUTCHours(0, 0, 0, 0);
+      today.setUTCHours(0, 0, 0, 0);
+      
+      const diffTime = today.getTime() - last.getTime();
+      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays > 1 && prev.dailyStreak > 0) {
+        return {
+          ...prev,
+          dailyStreak: 0,
+        };
+      }
+      return prev;
+    });
+  }, []);
+
   const activeLesson: CurriculumLesson =
     CURRICULUM_DATA.lessons.find((l) => l.id === selectedLessonId) ||
     CURRICULUM_DATA.lessons[0];
@@ -190,8 +215,38 @@ export default function App() {
       const updatedCount = existingLessonProg.completedDrillsCount + 1;
       const isNowCompleted = updatedScore >= 80 || updatedCount >= 4;
 
+      // Streak & Duration Logic
+      const todayStr = new Date().toISOString().split("T")[0];
+      let newStreak = prev.dailyStreak;
+      let newLastPracticeDate = prev.lastPracticeDate;
+      
+      if (!prev.lastPracticeDate) {
+        newStreak = 1;
+        newLastPracticeDate = todayStr;
+      } else if (prev.lastPracticeDate !== todayStr) {
+        const last = new Date(prev.lastPracticeDate);
+        const today = new Date(todayStr);
+        last.setUTCHours(0, 0, 0, 0);
+        today.setUTCHours(0, 0, 0, 0);
+        const diffDays = Math.round((today.getTime() - last.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (diffDays === 1) {
+          newStreak = prev.dailyStreak + 1;
+        } else if (diffDays > 1) {
+          newStreak = 1;
+        }
+        newLastPracticeDate = todayStr;
+      } else if (prev.dailyStreak === 0) {
+        newStreak = 1; // Recovered streak today
+      }
+      
+      const addedMinutes = record.duration / 60;
+
       return {
         ...prev,
+        dailyStreak: newStreak,
+        lastPracticeDate: newLastPracticeDate,
+        totalMinutesPracticed: prev.totalMinutesPracticed + addedMinutes,
         recentAttempts: [record, ...prev.recentAttempts.slice(0, 49)],
         lessonProgress: {
           ...prev.lessonProgress,
@@ -456,7 +511,7 @@ export default function App() {
           <div className="flex items-center space-x-1.5 sm:space-x-2.5">
             <div className="hidden sm:flex items-center space-x-1.5 bg-white border border-neutral-200 px-3 py-1.5 rounded-xl text-xs font-semibold text-neutral-600">
               <Clock className="w-3.5 h-3.5 text-emerald-600" />
-              <span>{progress.totalMinutesPracticed}m</span>
+              <span>{Math.round(progress.totalMinutesPracticed)}m</span>
             </div>
 
             <div className="flex items-center space-x-1 sm:space-x-1.5 bg-amber-50 border border-amber-200 text-amber-800 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold shadow-xs">
@@ -599,7 +654,7 @@ export default function App() {
                             Time Trained
                           </span>
                           <div className="text-lg sm:text-xl font-black text-cyan-700">
-                            {progress.totalMinutesPracticed}m
+                            {Math.round(progress.totalMinutesPracticed)}m
                           </div>
                           <span className="text-[9px] sm:text-[10px] text-neutral-500 font-semibold block truncate">
                             Speech audio time
@@ -646,7 +701,7 @@ export default function App() {
                   </span>
                   <span className="hidden md:inline text-neutral-300">•</span>
                   <span className="hidden md:inline text-neutral-500 font-medium">
-                    {progress.totalMinutesPracticed}m Audio Trained
+                    {Math.round(progress.totalMinutesPracticed)}m Audio Trained
                   </span>
                 </div>
 

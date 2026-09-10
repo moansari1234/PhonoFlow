@@ -541,7 +541,7 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
               Time Trained
             </span>
             <div className="text-3xl font-serif font-bold text-neutral-900 flex items-baseline space-x-1.5">
-              <span>{progress.totalMinutesPracticed}</span>
+              <span>{Math.round(progress.totalMinutesPracticed)}</span>
               <span className="text-xs font-bold text-cyan-600">minutes</span>
             </div>
             <span className="text-[11px] text-neutral-400 block">Active speech audio</span>
