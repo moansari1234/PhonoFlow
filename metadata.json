@@ -1,0 +1,11 @@
+{
+  "name": "PhonoFlow - Accent Training Studio",
+  "description": "Structured pronunciation & accent coaching laboratory helping Indian English speakers master General American English with acoustic pitch & waveform visualizers, phoneme drills, and personalized AI feedback.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
+

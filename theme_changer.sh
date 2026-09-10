@@ -1,0 +1,56 @@
+#!/bin/bash
+find src -type f -name "*.tsx" -o -name "*.ts" -o -name "*.css" | xargs sed -i \
+  -e 's/bg-slate-950/bg-[#FAFAFA]/g' \
+  -e 's/bg-slate-900/bg-white/g' \
+  -e 's/bg-slate-800/bg-neutral-100/g' \
+  -e 's/bg-slate-700/bg-neutral-200/g' \
+  -e 's/text-slate-100/text-neutral-900/g' \
+  -e 's/text-slate-200/text-neutral-800/g' \
+  -e 's/text-slate-300/text-neutral-600/g' \
+  -e 's/text-slate-400/text-neutral-500/g' \
+  -e 's/text-slate-500/text-neutral-400/g' \
+  -e 's/text-white/text-neutral-950/g' \
+  -e 's/border-slate-800/border-neutral-200/g' \
+  -e 's/border-slate-700/border-neutral-300/g' \
+  -e 's/border-slate-600/border-neutral-300/g' \
+  -e 's/text-emerald-400/text-emerald-600/g' \
+  -e 's/text-emerald-300/text-emerald-700/g' \
+  -e 's/bg-emerald-500\/10/bg-emerald-50/g' \
+  -e 's/bg-emerald-500\/15/bg-emerald-50/g' \
+  -e 's/bg-emerald-950\/80/bg-emerald-100/g' \
+  -e 's/bg-emerald-950\/60/bg-emerald-50/g' \
+  -e 's/border-emerald-800\/80/border-emerald-200/g' \
+  -e 's/border-emerald-800/border-emerald-200/g' \
+  -e 's/border-emerald-500\/30/border-emerald-200/g' \
+  -e 's/border-emerald-500\/40/border-emerald-300/g' \
+  -e 's/text-amber-400/text-amber-600/g' \
+  -e 's/text-amber-300/text-amber-700/g' \
+  -e 's/bg-amber-950\/40/bg-amber-50/g' \
+  -e 's/bg-amber-500\/10/bg-amber-50/g' \
+  -e 's/bg-amber-500\/15/bg-amber-50/g' \
+  -e 's/border-amber-800\/60/border-amber-200/g' \
+  -e 's/border-amber-500\/30/border-amber-200/g' \
+  -e 's/border-amber-500\/20/border-amber-200/g' \
+  -e 's/text-cyan-400/text-cyan-600/g' \
+  -e 's/text-cyan-300/text-cyan-700/g' \
+  -e 's/bg-cyan-500\/10/bg-cyan-50/g' \
+  -e 's/border-cyan-500\/30/border-cyan-200/g' \
+  -e 's/border-cyan-500\/20/border-cyan-200/g' \
+  -e 's/text-purple-400/text-purple-600/g' \
+  -e 's/text-purple-300/text-purple-700/g' \
+  -e 's/bg-purple-500\/10/bg-purple-50/g' \
+  -e 's/border-purple-500\/30/border-purple-200/g' \
+  -e 's/border-purple-500\/20/border-purple-200/g' \
+  -e 's/text-rose-400/text-rose-600/g' \
+  -e 's/text-rose-300/text-rose-700/g' \
+  -e 's/bg-rose-500\/10/bg-rose-50/g' \
+  -e 's/border-rose-500\/30/border-rose-200/g' \
+  -e 's/text-teal-400/text-teal-600/g' \
+  -e 's/text-teal-300/text-teal-700/g' \
+  -e 's/bg-teal-500\/10/bg-teal-50/g' \
+  -e 's/border-teal-500\/30/border-teal-200/g' \
+  -e 's/shadow-emerald-500\/20/shadow-sm/g' \
+  -e 's/shadow-emerald-500\/5/shadow-sm/g'
+
+chmod +x theme_changer.sh
+./theme_changer.sh

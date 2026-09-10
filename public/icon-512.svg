@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="emeraldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#10b981"/>
+      <stop offset="100%" stopColor="#047857"/>
+    </linearGradient>
+    <linearGradient id="waveGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stopColor="#6ee7b7"/>
+      <stop offset="100%" stopColor="#10b981"/>
+    </linearGradient>
+  </defs>
+  <!-- Background rounded squircle -->
+  <rect width="512" height="512" rx="128" fill="#0f172a"/>
+  
+  <!-- Outer glowing accent ring -->
+  <circle cx="256" cy="256" r="190" fill="none" stroke="url(#emeraldGrad)" stroke-width="8" stroke-dasharray="16 12" opacity="0.4"/>
+  
+  <!-- Headphones Arc -->
+  <path d="M 128 256 A 128 128 0 0 1 384 256" fill="none" stroke="url(#emeraldGrad)" stroke-width="28" stroke-linecap="round"/>
+  
+  <!-- Headphone Ear Cups -->
+  <rect x="100" y="230" width="48" height="96" rx="24" fill="#10b981"/>
+  <rect x="364" y="230" width="48" height="96" rx="24" fill="#10b981"/>
+  <rect x="114" y="244" width="20" height="68" rx="10" fill="#064e3b"/>
+  <rect x="378" y="244" width="20" height="68" rx="10" fill="#064e3b"/>
+
+  <!-- Soundwave Bars in the Center -->
+  <g transform="translate(256, 276)">
+    <!-- Bar -3 -->
+    <rect x="-72" y="-35" width="12" height="70" rx="6" fill="url(#waveGrad)"/>
+    <!-- Bar -2 -->
+    <rect x="-44" y="-60" width="12" height="120" rx="6" fill="url(#waveGrad)"/>
+    <!-- Bar -1 -->
+    <rect x="-16" y="-85" width="12" height="170" rx="6" fill="url(#waveGrad)"/>
+    <!-- Bar 0 (center) -->
+    <rect x="12" y="-55" width="12" height="110" rx="6" fill="url(#waveGrad)"/>
+    <!-- Bar 1 -->
+    <rect x="40" y="-75" width="12" height="150" rx="6" fill="url(#waveGrad)"/>
+    <!-- Bar 2 -->
+    <rect x="68" y="-30" width="12" height="60" rx="6" fill="url(#waveGrad)"/>
+  </g>
+</svg>
