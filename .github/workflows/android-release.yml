@@ -15,9 +15,11 @@ jobs:
   build:
     name: Build & Release Android APK
     runs-on: ubuntu-latest
+    env:
+      SIGNING_KEY: ${{ secrets.ANDROID_SIGNING_KEY }}
 
     permissions:
-      contents: write # Needed for creating GitHub Releases
+      contents: write # Needed for creating GitHub Releases and uploading assets
 
     steps:
       - name: Checkout Repository
@@ -55,19 +57,19 @@ jobs:
           fi
           npx cap sync android
 
-      - name: Configure Android Build & Signing
+      - name: Configure Android Build & Versioning
         run: |
           VERSION_NAME="${{ github.event.inputs.version_tag || github.ref_name }}"
           VERSION_NAME=${VERSION_NAME#v}
           [ -z "$VERSION_NAME" ] && VERSION_NAME="1.0.0"
           VERSION_CODE=${{ github.run_number }}
           
-          # Set version code and name
+          # Set version code and name in build.gradle
           sed -i "s/versionCode 1/versionCode $VERSION_CODE/g" android/app/build.gradle
           sed -i "s/versionName \"1.0\"/versionName \"$VERSION_NAME\"/g" android/app/build.gradle
           
-          # Enable debug signing on release build so it is always signed and installable
-          sed -i 's/buildTypes {/buildTypes {\n        release {\n            signingConfig signingConfigs.debug\n        }/' android/app/build.gradle
+          # Ensure release build is signed by default
+          sed -i 's/minifyEnabled false/minifyEnabled false\n            signingConfig signingConfigs.debug/' android/app/build.gradle || true
 
       - name: Build Release APK
         working-directory: ./android
@@ -76,7 +78,7 @@ jobs:
           ./gradlew assembleRelease
 
       - name: Sign APK with Custom Keystore (if secret provided)
-        if: ${{ secrets.ANDROID_SIGNING_KEY != '' }}
+        if: ${{ env.SIGNING_KEY != '' }}
         id: sign_apk
         uses: r0adkll/sign-android-release@v1
         with:
@@ -99,6 +101,13 @@ jobs:
             cp "${{ steps.sign_apk.outputs.signedReleaseFile }}" "output_apk/$APK_NAME"
           else
             RAW_APK=$(find android/app/build/outputs/apk -name "*.apk" | head -n 1)
+            
+            # Ensure APK is signed so devices allow installation
+            if [[ "$RAW_APK" == *"unsigned"* ]]; then
+              keytool -genkey -v -keystore auto.keystore -alias phonoflow -keyalg RSA -keysize 2048 -validity 10000 -storepass phonoflow -keypass phonoflow -dname "CN=PhonoFlow, O=PhonoFlow, C=US"
+              jarsigner -sigalg SHA256withRSA -digestalg SHA-256 -keystore auto.keystore -storepass phonoflow -keypass phonoflow "$RAW_APK" phonoflow
+            fi
+            
             cp "$RAW_APK" "output_apk/$APK_NAME"
           fi
 
@@ -109,7 +118,7 @@ jobs:
       - name: Upload APK as Workflow Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.package_apk.outputs.apk_name }}
+          name: PhonoFlow-APK
           path: ${{ steps.package_apk.outputs.apk_path }}
           if-no-files-found: error
 
