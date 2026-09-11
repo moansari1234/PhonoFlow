@@ -23,21 +23,22 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Set up Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
+          cache: 'npm'
 
       - name: Install Dependencies
-        run: npm install
+        run: npm ci || npm install
 
       - name: Build Web Application
         run: npm run build
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'zulu'
 
       - name: Set up Android SDK
@@ -45,7 +46,9 @@ jobs:
 
       - name: Add Capacitor Android Platform
         run: |
-          npx cap add android || true
+          if [ ! -d "android" ]; then
+            npx cap add android
+          fi
           npx cap sync android
 
       - name: Update Android Version Code & Name
@@ -57,20 +60,35 @@ jobs:
           # Replace default Capacitor versioning in build.gradle
           sed -i "s/versionCode 1/versionCode $VERSION_CODE/g" android/app/build.gradle
           sed -i "s/versionName \"1.0\"/versionName \"$VERSION_NAME\"/g" android/app/build.gradle
-          
+
       - name: Build Release APK
         working-directory: ./android
-        run: ./gradlew assembleRelease
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleRelease
 
-      - name: Sign APK
+      - name: Sign APK (if secrets configured)
+        if: ${{ env.ANDROID_KEYSTORE != '' }}
         id: sign_apk
         uses: r0adkll/sign-android-release@v1
+        env:
+          ANDROID_KEYSTORE: ${{ secrets.ANDROID_SIGNING_KEY }}
         with:
           releaseDirectory: android/app/build/outputs/apk/release
           signingKeyBase64: ${{ secrets.ANDROID_SIGNING_KEY }}
           alias: ${{ secrets.ANDROID_KEY_ALIAS }}
           keyStorePassword: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           keyPassword: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+      - name: Locate APK File
+        id: locate_apk
+        run: |
+          if [ -n "${{ steps.sign_apk.outputs.signedReleaseFile }}" ] && [ -f "${{ steps.sign_apk.outputs.signedReleaseFile }}" ]; then
+            echo "apk_file=${{ steps.sign_apk.outputs.signedReleaseFile }}" >> $GITHUB_OUTPUT
+          else
+            APK_PATH=$(find android/app/build/outputs/apk/release -name "*.apk" | head -n 1)
+            echo "apk_file=$APK_PATH" >> $GITHUB_OUTPUT
+          fi
 
       - name: Extract Tag Name
         id: get_tag
@@ -83,7 +101,7 @@ jobs:
         with:
           tag_name: ${{ env.TAG_NAME }}
           name: Release ${{ env.TAG_NAME }}
-          files: ${{ steps.sign_apk.outputs.signedReleaseFile }}
+          files: ${{ steps.locate_apk.outputs.apk_file }}
           generate_release_notes: true
           draft: false
           prerelease: false
