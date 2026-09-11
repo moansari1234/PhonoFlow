@@ -55,15 +55,19 @@ jobs:
           fi
           npx cap sync android
 
-      - name: Update Android Version Code & Name
+      - name: Configure Android Build & Signing
         run: |
           VERSION_NAME="${{ github.event.inputs.version_tag || github.ref_name }}"
-          VERSION_NAME=${VERSION_NAME#v} # Remove 'v' prefix
+          VERSION_NAME=${VERSION_NAME#v}
+          [ -z "$VERSION_NAME" ] && VERSION_NAME="1.0.0"
           VERSION_CODE=${{ github.run_number }}
           
-          # Replace default Capacitor versioning in build.gradle
+          # Set version code and name
           sed -i "s/versionCode 1/versionCode $VERSION_CODE/g" android/app/build.gradle
           sed -i "s/versionName \"1.0\"/versionName \"$VERSION_NAME\"/g" android/app/build.gradle
+          
+          # Enable debug signing on release build so it is always signed and installable
+          sed -i 's/buildTypes {/buildTypes {\n        release {\n            signingConfig signingConfigs.debug\n        }/' android/app/build.gradle
 
       - name: Build Release APK
         working-directory: ./android
@@ -71,12 +75,10 @@ jobs:
           chmod +x ./gradlew
           ./gradlew assembleRelease
 
-      - name: Sign APK (if secrets configured)
-        if: ${{ env.ANDROID_KEYSTORE != '' }}
+      - name: Sign APK with Custom Keystore (if secret provided)
+        if: ${{ secrets.ANDROID_SIGNING_KEY != '' }}
         id: sign_apk
         uses: r0adkll/sign-android-release@v1
-        env:
-          ANDROID_KEYSTORE: ${{ secrets.ANDROID_SIGNING_KEY }}
         with:
           releaseDirectory: android/app/build/outputs/apk/release
           signingKeyBase64: ${{ secrets.ANDROID_SIGNING_KEY }}
@@ -84,28 +86,39 @@ jobs:
           keyStorePassword: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           keyPassword: ${{ secrets.ANDROID_KEY_PASSWORD }}
 
-      - name: Locate APK File
-        id: locate_apk
-        run: |
-          if [ -n "${{ steps.sign_apk.outputs.signedReleaseFile }}" ] && [ -f "${{ steps.sign_apk.outputs.signedReleaseFile }}" ]; then
-            echo "apk_file=${{ steps.sign_apk.outputs.signedReleaseFile }}" >> $GITHUB_OUTPUT
-          else
-            APK_PATH=$(find android/app/build/outputs/apk/release -name "*.apk" | head -n 1)
-            echo "apk_file=$APK_PATH" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Extract Tag Name
-        id: get_tag
+      - name: Package & Name APK
+        id: package_apk
         run: |
           TAG_NAME="${{ github.event.inputs.version_tag || github.ref_name }}"
-          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+          TAG_CLEAN=${TAG_NAME#v}
+          [ -z "$TAG_CLEAN" ] && TAG_CLEAN="1.0.0"
+          APK_NAME="PhonoFlow-v${TAG_CLEAN}.apk"
+
+          mkdir -p output_apk
+          if [ -n "${{ steps.sign_apk.outputs.signedReleaseFile }}" ] && [ -f "${{ steps.sign_apk.outputs.signedReleaseFile }}" ]; then
+            cp "${{ steps.sign_apk.outputs.signedReleaseFile }}" "output_apk/$APK_NAME"
+          else
+            RAW_APK=$(find android/app/build/outputs/apk -name "*.apk" | head -n 1)
+            cp "$RAW_APK" "output_apk/$APK_NAME"
+          fi
+
+          echo "apk_path=output_apk/$APK_NAME" >> $GITHUB_OUTPUT
+          echo "apk_name=$APK_NAME" >> $GITHUB_OUTPUT
+          echo "TAG_NAME=v${TAG_CLEAN}" >> $GITHUB_ENV
+
+      - name: Upload APK as Workflow Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.package_apk.outputs.apk_name }}
+          path: ${{ steps.package_apk.outputs.apk_path }}
+          if-no-files-found: error
 
       - name: Create GitHub Release & Upload APK
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.TAG_NAME }}
           name: Release ${{ env.TAG_NAME }}
-          files: ${{ steps.locate_apk.outputs.apk_file }}
+          files: ${{ steps.package_apk.outputs.apk_path }}
           generate_release_notes: true
           draft: false
           prerelease: false
